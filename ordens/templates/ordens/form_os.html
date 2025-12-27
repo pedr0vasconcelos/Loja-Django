@@ -1,0 +1,221 @@
+{% extends 'ordens/base.html' %}
+{% load tailwind_filters %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-md">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">
+            {% if editando %} Editar Ordem de Serviço #{{ os.id }} {% else %} Registrar Nova OS {% endif %}
+        </h2>
+        {% if editando %}
+        <span class="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-700">
+            {{ os.get_status_display }}
+        </span>
+        {% endif %}
+    </div>
+
+    <div id="form-cadastro-unificado" class="hidden mb-8 p-6 bg-gray-50 border-2 border-dashed border-blue-300 rounded-xl shadow-lg transition-all">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-sm font-bold text-blue-800 uppercase tracking-widest flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                Cadastro Rápido Completo
+            </h3>
+            <button type="button" onclick="document.getElementById('form-cadastro-unificado').classList.add('hidden')" class="text-gray-400 hover:text-red-500 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1">NOME DO CLIENTE</label>
+                <input type="text" id="n_nome" placeholder="Nome Completo" class="w-full text-sm rounded-lg border-gray-300 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1">CPF/CNPJ</label>
+                <input type="text" id="n_cpf" placeholder="000.000.000-00" class="w-full text-sm rounded-lg border-gray-300 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1">TELEFONE</label>
+                <input type="text" id="n_tel" placeholder="(00) 00000-0000" class="w-full text-sm rounded-lg border-gray-300 focus:ring-blue-500">
+            </div>
+        </div>
+
+        <div class="relative flex py-2 items-center">
+            <div class="flex-grow border-t border-gray-300"></div>
+            <span class="flex-shrink mx-4 text-gray-400 text-xs font-bold">DADOS DO EQUIPAMENTO</span>
+            <div class="flex-grow border-t border-gray-300"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div>
+                <label class="block text-xs font-bold text-green-600 mb-1">MARCA</label>
+                <input type="text" id="n_marca" placeholder="Ex: Dell" class="w-full text-sm rounded-lg border-gray-300 focus:ring-green-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-green-600 mb-1">MODELO</label>
+                <input type="text" id="n_modelo" placeholder="Ex: Inspiron 15" class="w-full text-sm rounded-lg border-gray-300 focus:ring-green-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-green-600 mb-1">
+                    Nº DE SÉRIE <span class="text-red-500">*</span>
+                </label>
+                <input type="text" id="n_serie" 
+                    placeholder="Obrigatório para identificação" 
+                    required
+                    class="w-full text-sm rounded-lg border-red-200 focus:ring-red-500 focus:border-red-500 bg-red-50/30 font-bold uppercase">
+            </div>
+        </div>
+        
+        <div class="mt-6 flex justify-end">
+            <button type="button" 
+                    hx-post="{% url 'criar_cliente_equipamento_rapido' %}"
+                    hx-vals='js:{
+                        nome_novo_cliente: document.getElementById("n_nome").value, 
+                        cpf_novo_cliente: document.getElementById("n_cpf").value, 
+                        telefone_novo_cliente: document.getElementById("n_tel").value,
+                        marca: document.getElementById("n_marca").value,
+                        modelo: document.getElementById("n_modelo").value,
+                        serie: document.getElementById("n_serie").value
+                    }'
+                    hx-target="#id_cliente"
+                    hx-swap="afterbegin"
+                    class="bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg transition-all active:scale-95">
+                Salvar Tudo e Selecionar
+            </button>
+        </div>
+    </div>
+
+    {% if form.errors %}
+    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+        <p class="font-bold">Erro ao salvar:</p>
+        <ul>
+            {% for field, errors in form.errors.items %}
+                <li>{{ field }}: {{ errors|striptags }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div class="relative">
+                <div class="flex justify-between items-center mb-1">
+                    
+                    <button type="button" 
+                            onclick="document.getElementById('form-cadastro-unificado').classList.toggle('hidden')" 
+                            class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-bold rounded text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors">
+                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                        Novo Cliente Completo
+                    </button>
+                </div>
+                {{ form.cliente|as_crispy_field }}
+            </div>
+
+            <div class="relative">
+                <div class="flex justify-between items-center mb-1 h-8">
+
+                </div>
+                {{ form.equipamento|as_crispy_field }}
+            </div>
+        </div>
+
+        {{ form.defeito_relatado|as_crispy_field }}
+        
+        {% if editando %}
+            <div class="border-t pt-4 mt-4">
+                <h3 class="font-semibold text-gray-700 mb-3 uppercase text-xs tracking-wider">Laudo e Finalização</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {{ form.status|as_crispy_field }}
+                    {{ form.valor_total|as_crispy_field }}
+                </div>
+                {% if form.laudo_tecnico %}
+                    {{ form.laudo_tecnico|as_crispy_field }}
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        <div class="flex justify-end space-x-3 mt-6 border-t pt-6">
+            <a href="{% url 'dashboard' %}" class="px-4 py-2 text-gray-500 hover:text-gray-800 font-medium transition text-sm">
+                Cancelar
+            </a>
+            <button type="submit" class="bg-blue-600 text-white px-8 py-2.5 rounded-lg hover:bg-blue-700 shadow-lg transition-all font-bold active:scale-95">
+                {% if editando %} Salvar Alterações {% else %} Criar Ordem de Serviço {% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // 1. Configuração CSRF para HTMX
+    document.body.addEventListener('htmx:configRequest', (event) => {
+        event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+    });
+
+    // 2. Função para aplicar as máscaras (Melhorada)
+    function aplicarMascaras() {
+        // CPF/CNPJ
+        const cpfElements = [document.getElementById('n_cpf'), document.querySelector('[name="cpf_cnpj"]')];
+        cpfElements.forEach(el => {
+            if (el && !el.classList.contains('masked')) {
+                IMask(el, {
+                    mask: [
+                        { mask: '000.000.000-00', type: 'CPF' },
+                        { mask: '00.000.000/0000-00', type: 'CNPJ' }
+                    ]
+                });
+                el.classList.add('masked');
+            }
+        });
+
+        // Telefone
+        const telElements = [document.getElementById('n_tel'), document.querySelector('[name="telefone"]')];
+        telElements.forEach(el => {
+            if (el && !el.classList.contains('masked')) {
+                IMask(el, { mask: '(00) 00000-0000' });
+                el.classList.add('masked');
+            }
+        });
+    }
+
+    // 3. Lógica de Cadastro Unificado (Corrigida para sincronia total)
+document.body.addEventListener('clienteCriado', function(evt) {
+    // Esconde o painel
+    document.getElementById('form-cadastro-unificado').classList.add('hidden');
+    
+    // Limpa os campos do cadastro rápido
+    ['n_nome', 'n_cpf', 'n_tel', 'n_marca', 'n_modelo', 'n_serie'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    // O HTMX acabou de injetar o <option selected>. 
+    // Precisamos garantir que pegamos esse valor exato para a próxima chamada.
+    const clienteSelect = document.getElementById('id_cliente');
+    
+    // Pequeno atraso (0ms) para garantir que o DOM terminou de renderizar a nova opção
+    setTimeout(() => {
+        const clienteId = clienteSelect.value;
+        if (clienteId) {
+            // Chamada direta para atualizar o dropdown de equipamentos
+            htmx.ajax('GET', `/carregar-equipamentos/?cliente=${clienteId}`, {
+                target: '#id_equipamento',
+                swap: 'innerHTML'
+            }).then(() => {
+                // Após o carregamento do dropdown, selecionamos o equipamento novo
+                const eqSelect = document.getElementById('id_equipamento');
+                if (eqSelect.options.length > 1) {
+                    eqSelect.selectedIndex = 1;
+                }
+            });
+        }
+    }, 50);
+});
+
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', aplicarMascaras);
+    document.body.addEventListener('htmx:afterOnLoad', aplicarMascaras);
+</script>
+
+{% endblock %}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema OS - Assistência Técnica</title>
+    <script src="https://unpkg.com/imask"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="flex h-screen">
+        <aside class="w-64 bg-slate-800 text-white p-6 shadow-lg">
+            <h1 class="text-2xl font-bold mb-8">OS Manager</h1>
+            <nav class="space-y-4">
+                <a href="#" class="block py-2 px-4 bg-blue-600 rounded">Dashboard</a>
+                <a href="#" class="block py-2 px-4 hover:bg-slate-700 transition">Clientes</a>
+                <a href="#" class="block py-2 px-4 hover:bg-slate-700 transition">Ordens de Serviço</a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-10 overflow-y-auto">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

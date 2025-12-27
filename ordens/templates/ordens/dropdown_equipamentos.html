@@ -1,0 +1,4 @@
+<option value="">---------</option>
+{% for equipamento in equipamentos %}
+    <option value="{{ equipamento.id }}">{{ equipamento.marca }} {{ equipamento.modelo }}</option>
+{% endfor %}

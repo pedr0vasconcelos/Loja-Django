@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: a4;
+            margin: 1cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.4;
+        }
+        .header {
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header table { width: 100%; }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+            text-align: right;
+        }
+        .section-title {
+            background-color: #f3f4f6;
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-top: 15px;
+            border-left: 4px solid #2563eb;
+        }
+        .info-table {
+            width: 100%;
+            margin-top: 5px;
+            border-collapse: collapse;
+        }
+        .info-table td {
+            padding: 5px;
+            font-size: 11px;
+            vertical-align: top;
+        }
+        .items-table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+        .items-table th {
+            background-color: #2563eb;
+            color: white;
+            font-size: 10px;
+            padding: 8px;
+            text-align: left;
+        }
+        .items-table td {
+            padding: 8px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 10px;
+        }
+        .total-box {
+            margin-top: 20px;
+            text-align: right;
+            font-size: 14px;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 9px;
+            color: #666;
+        }
+        .signature {
+            margin-top: 40px;
+            border-top: 1px solid #333;
+            width: 250px;
+            text-align: center;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <table>
+            <tr>
+                <td>
+                    <strong>SUA ASSISTÊNCIA TÉCNICA</strong><br>
+                    CNPJ: 00.000.000/0001-00<br>
+                    Rua Exemplo, 123 - Centro<br>
+                    Telefone: (00) 00000-0000
+                </td>
+                <td class="title">ORDEM DE SERVIÇO #{{ os.id }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section-title">Dados do Cliente</div>
+    <table class="info-table">
+        <tr>
+            <td width="50%"><strong>Nome:</strong> {{ os.cliente.nome }}</td>
+            <td width="50%"><strong>CPF/CNPJ:</strong> {{ os.cliente.cpf_cnpj }}</td>
+        </tr>
+        <tr>
+            <td><strong>Telefone:</strong> {{ os.cliente.telefone }}</td>
+            <td><strong>Data de Entrada:</strong> {{ os.data_entrada|date:"d/m/Y H:i" }}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Informações do Equipamento</div>
+    <table class="info-table">
+        <tr>
+            <td width="33%"><strong>Marca:</strong> {{ os.equipamento.marca }}</td>
+            <td width="33%"><strong>Modelo:</strong> {{ os.equipamento.modelo }}</td>
+            <td width="33%"><strong>Nº de Série:</strong> {{ os.equipamento.num_serie }}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Descrição do Problema</div>
+    <div style="padding: 5px 10px; font-size: 11px;">
+        {{ os.defeito_relatado|linebreaks }}
+    </div>
+
+    {% if os.itens.all %}
+    <div class="section-title">Itens e Serviços</div>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Descrição</th>
+                <th width="10%">Qtd</th>
+                <th width="15%">Unitário</th>
+                <th width="15%">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in os.itens.all %}
+            <tr>
+                <td>{{ item.descricao }}</td>
+                <td>{{ item.quantidade }}</td>
+                <td>R$ {{ item.valor_unitario|floatformat:2 }}</td>
+                <td>R$ {{ item.subtotal|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <div class="total-box">
+        <strong>VALOR TOTAL: R$ {{ os.valor_total|floatformat:2 }}</strong>
+    </div>
+
+    {% if os.laudo_tecnico %}
+    <div class="section-title">Laudo Técnico / Observações</div>
+    <div style="padding: 5px 10px; font-size: 11px;">
+        {{ os.laudo_tecnico|linebreaks }}
+    </div>
+    {% endif %}
+
+    <table style="width: 100%; margin-top: 60px;">
+        <tr>
+            <td align="center">
+                <div class="signature">Assinatura do Técnico</div>
+            </td>
+            <td align="center">
+                <div class="signature">Assinatura do Cliente</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="footer">
+        Este documento é um comprovante de prestação de serviços. Garantia de 90 dias conforme CDC sobre os serviços realizados.
+    </div>
+</body>
+</html>
