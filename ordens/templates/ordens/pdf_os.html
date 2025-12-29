@@ -121,6 +121,13 @@
         {{ os.defeito_relatado|linebreaks }}
     </div>
 
+    {% if os.laudo_tecnico %}
+    <div class="section-title">Laudo Técnico / Observações</div>
+    <div style="padding: 5px 10px; font-size: 11px;">
+        {{ os.laudo_tecnico|linebreaks }}
+    </div>
+    {% endif %}
+
     {% if os.itens.all %}
     <div class="section-title">Itens e Serviços</div>
     <table class="items-table">
@@ -147,14 +154,7 @@
 
     <div class="total-box">
         <strong>VALOR TOTAL: R$ {{ os.valor_total|floatformat:2 }}</strong>
-    </div>
-
-    {% if os.laudo_tecnico %}
-    <div class="section-title">Laudo Técnico / Observações</div>
-    <div style="padding: 5px 10px; font-size: 11px;">
-        {{ os.laudo_tecnico|linebreaks }}
-    </div>
-    {% endif %}
+    </div>    
 
     <table style="width: 100%; margin-top: 60px;">
         <tr>

@@ -1,0 +1,45 @@
+<table class="w-full text-sm text-left border-collapse">
+    <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+        <tr>
+            <th class="p-3">Descrição</th>
+            <th class="p-3">Qtd</th>
+            <th class="p-3">Unitário</th>
+            <th class="p-3">Subtotal</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in os.itens.all %}
+        <tr class="border-b">
+            <td class="p-3">{{ item.descricao }}</td>
+            <td class="p-3">{{ item.quantidade }}</td>
+            <td class="p-3">R$ {{ item.valor_unitario|floatformat:2 }}</td>
+            <td class="p-3 font-semibold">R$ {{ item.subtotal|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4" class="p-3 text-center text-gray-500 italic">Nenhum item adicionado.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    (function() {
+        // 1. Pega o valor total atualizado que veio da View (calculado pelos Signals)
+        // Usamos o filtro 'safe' e garantimos o formato de ponto decimal para o JS
+        const novoTotal = "{{ os.valor_total|floatformat:2|safe }}".replace(',', '.');
+        
+        // 2. Localiza o campo de valor total no formulário principal (ID padrão do Django)
+        const campoTotal = document.getElementById('id_valor_total');
+        
+        if (campoTotal) {
+            campoTotal.value = novoTotal;
+            
+            // Opcional: Efeito visual de "piscar" para indicar que atualizou
+            campoTotal.classList.add('bg-yellow-100');
+            setTimeout(() => {
+                campoTotal.classList.remove('bg-yellow-100');
+            }, 500);
+        }
+    })();
+</script>

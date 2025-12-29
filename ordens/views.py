@@ -2,8 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
-from .models import OrdemServico, Equipamento, Cliente
+from .models import OrdemServico, Equipamento, Cliente, ItemOS
 from .forms import OrdemServicoForm
+from .forms import ItemOSForm
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 
@@ -20,9 +21,10 @@ def dashboard(request):
     if busca:
         ultimas_os = OrdemServico.objects.filter(
             Q(id__icontains=busca) | Q(cliente__nome__icontains=busca)
-        ).select_related('cliente', 'equipamento').order_by('-data_entrada')
+        ).select_related('cliente', 'equipamento').prefetch_related('itens').order_by('-data_entrada')
     else:
-        ultimas_os = OrdemServico.objects.select_related('cliente', 'equipamento').order_by('-data_entrada')[:5]
+        # Adicionado o prefetch_related('itens') aqui também
+        ultimas_os = OrdemServico.objects.select_related('cliente', 'equipamento').prefetch_related('itens').order_by('-data_entrada')[:10]
     
     return render(request, 'ordens/dashboard.html', {
         'total_abertas': total_abertas,
@@ -55,16 +57,27 @@ def nova_os(request):
     return render(request, 'ordens/form_os.html', {'form': form, 'editando': False})
 
 def editar_os(request, os_id):
+    # Busca a instância da OS
     os_instancia = get_object_or_404(OrdemServico, id=os_id)
+    
     if request.method == 'POST':
         form = OrdemServicoForm(request.POST, instance=os_instancia)
         
+        # Garante que o Django aceite o equipamento selecionado
         if 'equipamento' in request.POST:
             equip_id = request.POST.get('equipamento')
             form.fields['equipamento'].queryset = Equipamento.objects.filter(id=equip_id)
             
         if form.is_valid():
-            form.save() # Na edição, os campos já estarão na tela e preenchidos
+            # commit=False cria o objeto na memória sem salvar no banco ainda
+            os_editada = form.save(commit=False)
+            
+            # Se o valor_total veio vazio do formulário (por causa do readonly), 
+            # pegamos o valor que já estava no banco de dados para evitar o erro nulo
+            if os_editada.valor_total is None:
+                os_editada.valor_total = os_instancia.valor_total
+            
+            os_editada.save()
             return redirect('dashboard')
     else:
         form = OrdemServicoForm(instance=os_instancia)
@@ -134,3 +147,26 @@ def criar_cliente_equipamento_rapido(request):
         return response
         
     return HttpResponse("Erro: Preencha todos os campos.", status=400)
+
+@require_POST
+def adicionar_item(request, os_id):
+    os_instancia = get_object_or_404(OrdemServico, id=os_id)
+    
+    # Capturamos os dados manualmente do POST para evitar conflitos de validação do form principal
+    descricao = request.POST.get('descricao')
+    quantidade = request.POST.get('quantidade')
+    valor_unitario = request.POST.get('valor_unitario')
+
+    if descricao and quantidade and valor_unitario:
+        # Criamos o item vinculado à OS
+        ItemOS.objects.create(
+            os=os_instancia,
+            descricao=descricao,
+            quantidade=quantidade,
+            valor_unitario=valor_unitario
+        )
+        # O Signal atualizará o os_instancia.valor_total automaticamente
+        os_instancia.refresh_from_db() 
+
+    # Retorna o partial da tabela
+    return render(request, 'ordens/partials/tabela_itens.html', {'os': os_instancia})

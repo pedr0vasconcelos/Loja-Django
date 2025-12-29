@@ -14,6 +14,7 @@
         {% endif %}
     </div>
 
+    {% if not editando %}
     <div id="form-cadastro-unificado" class="hidden mb-8 p-6 bg-gray-50 border-2 border-dashed border-blue-300 rounded-xl shadow-lg transition-all">
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-sm font-bold text-blue-800 uppercase tracking-widest flex items-center">
@@ -84,6 +85,7 @@
             </button>
         </div>
     </div>
+    {% endif %}
 
     {% if form.errors %}
     <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
@@ -99,10 +101,10 @@
     <form method="post" class="space-y-4">
         {% csrf_token %}
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
             <div class="relative">
+                {% if not editando %}
                 <div class="flex justify-between items-center mb-1">
-                    
                     <button type="button" 
                             onclick="document.getElementById('form-cadastro-unificado').classList.toggle('hidden')" 
                             class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-bold rounded text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors">
@@ -110,13 +112,11 @@
                         Novo Cliente Completo
                     </button>
                 </div>
+                {% endif %}
                 {{ form.cliente|as_crispy_field }}
             </div>
 
             <div class="relative">
-                <div class="flex justify-between items-center mb-1 h-8">
-
-                </div>
                 {{ form.equipamento|as_crispy_field }}
             </div>
         </div>
@@ -134,6 +134,30 @@
                     {{ form.laudo_tecnico|as_crispy_field }}
                 {% endif %}
             </div>
+
+            <div class="border-t pt-6 mt-6">
+                <h3 class="font-bold text-gray-700 mb-4 uppercase text-xs tracking-wider">Peças e Serviços</h3>
+        
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6 bg-gray-50 p-4 rounded-lg">
+                    <div class="md:col-span-2">
+                        <input type="text" id="item_desc" name="descricao" placeholder="Descrição da peça ou serviço" class="w-full rounded-lg border-gray-300 text-sm">
+                    </div>
+                    <input type="number" id="item_qtd" name="quantidade" value="1" class="w-full rounded-lg border-gray-300 text-sm">
+                    <div class="flex space-x-2">
+                        <input type="number" id="item_valor" name="valor_unitario" step="0.01" placeholder="Valor R$" class="w-full rounded-lg border-gray-300 text-sm">
+                        <button type="button" 
+                                hx-post="{% url 'adicionar_item' os.id %}" 
+                                hx-include="#item_desc, #item_qtd, #item_valor"
+                                hx-target="#tabela-itens-container" 
+                                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                            +
+                        </button>
+                    </div>
+                </div>
+                <div id="tabela-itens-container">
+                    {% include 'ordens/partials/tabela_itens.html' %}
+                </div>
+            </div>
         {% endif %}
         
         <div class="flex justify-end space-x-3 mt-6 border-t pt-6">
@@ -148,14 +172,11 @@
 </div>
 
 <script>
-    // 1. Configuração CSRF para HTMX
     document.body.addEventListener('htmx:configRequest', (event) => {
         event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
     });
 
-    // 2. Função para aplicar as máscaras (Melhorada)
     function aplicarMascaras() {
-        // CPF/CNPJ
         const cpfElements = [document.getElementById('n_cpf'), document.querySelector('[name="cpf_cnpj"]')];
         cpfElements.forEach(el => {
             if (el && !el.classList.contains('masked')) {
@@ -169,7 +190,6 @@
             }
         });
 
-        // Telefone
         const telElements = [document.getElementById('n_tel'), document.querySelector('[name="telefone"]')];
         telElements.forEach(el => {
             if (el && !el.classList.contains('masked')) {
@@ -179,43 +199,41 @@
         });
     }
 
-    // 3. Lógica de Cadastro Unificado (Corrigida para sincronia total)
-document.body.addEventListener('clienteCriado', function(evt) {
-    // Esconde o painel
-    document.getElementById('form-cadastro-unificado').classList.add('hidden');
-    
-    // Limpa os campos do cadastro rápido
-    ['n_nome', 'n_cpf', 'n_tel', 'n_marca', 'n_modelo', 'n_serie'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
+    document.body.addEventListener('clienteCriado', function(evt) {
+        const pannel = document.getElementById('form-cadastro-unificado');
+        if(pannel) pannel.classList.add('hidden');
+        
+        ['n_nome', 'n_cpf', 'n_tel', 'n_marca', 'n_modelo', 'n_serie'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+
+        const clienteSelect = document.getElementById('id_cliente');
+        setTimeout(() => {
+            const clienteId = clienteSelect.value;
+            if (clienteId) {
+                htmx.ajax('GET', `/carregar-equipamentos/?cliente=${clienteId}`, {
+                    target: '#id_equipamento',
+                    swap: 'innerHTML'
+                }).then(() => {
+                    const eqSelect = document.getElementById('id_equipamento');
+                    if (eqSelect.options.length > 1) {
+                        eqSelect.selectedIndex = 1;
+                    }
+                });
+            }
+        }, 50);
     });
 
-    // O HTMX acabou de injetar o <option selected>. 
-    // Precisamos garantir que pegamos esse valor exato para a próxima chamada.
-    const clienteSelect = document.getElementById('id_cliente');
-    
-    // Pequeno atraso (0ms) para garantir que o DOM terminou de renderizar a nova opção
-    setTimeout(() => {
-        const clienteId = clienteSelect.value;
-        if (clienteId) {
-            // Chamada direta para atualizar o dropdown de equipamentos
-            htmx.ajax('GET', `/carregar-equipamentos/?cliente=${clienteId}`, {
-                target: '#id_equipamento',
-                swap: 'innerHTML'
-            }).then(() => {
-                // Após o carregamento do dropdown, selecionamos o equipamento novo
-                const eqSelect = document.getElementById('id_equipamento');
-                if (eqSelect.options.length > 1) {
-                    eqSelect.selectedIndex = 1;
-                }
-            });
-        }
-    }, 50);
-});
-
-    // Inicialização
     document.addEventListener('DOMContentLoaded', aplicarMascaras);
     document.body.addEventListener('htmx:afterOnLoad', aplicarMascaras);
+    
+    document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+        if (evt.detail.target.id === 'tabela-itens-container') {
+            document.getElementById('item_desc').value = '';
+            document.getElementById('item_valor').value = '';
+            document.getElementById('item_qtd').value = '1';
+        }
+    });
 </script>
-
 {% endblock %}
